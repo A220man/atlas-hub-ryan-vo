@@ -1,0 +1,16 @@
+# Changelog
+
+All notable changes to atlas-hub-ryan-vo are documented in this file.
+
+## [1.0.0] - 2026-10-10
+
+### Added
+- Document and topic ingestion engine with hierarchical chunking and intent classification.
+- Deterministic slide graph synthesis producing multi-layout slide decks (Hero, Problem-Solution, Architecture, Benchmark Metrics, Comparison, Conclusion).
+- Native PowerPoint (`.pptx`) export compiler supporting OpenXML shapes, tables, charts, transitions, and speaker notes.
+- Attribution Guard verifying span-level grounding of presentation claims against source documents with fail-closed diagnostics and cross-platform reliability.
+- Multi-dimensional presentation quality evaluation engine scoring factual grounding, visual density balance, narrative pacing, and terminology consistency.
+- Audio narration planner calculating speaker note pacing, speech duration, pause markers, and subtitle timeline exports.
+- Multi-provider LLM advisory integration supporting OpenAI-compatible, Anthropic, Gemini, and Ollama with offline heuristic fallback.
+- OIDC authorization code authentication with Keycloak and SAML identity brokering support, role-based access control, and development demo mode.
+- Modern React and TypeScript dashboard with interactive slide previews, attribution inspection, scorecard analysis, and export workflows.

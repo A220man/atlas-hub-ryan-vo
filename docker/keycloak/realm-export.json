@@ -1,0 +1,89 @@
+{
+  "id": "atlas-hub",
+  "realm": "atlas-hub",
+  "displayName": "Atlas Hub OIDC Realm",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator with full system and user management access"
+      },
+      {
+        "name": "analyst",
+        "description": "Analyst with presentation synthesis, evaluation, and export rights"
+      },
+      {
+        "name": "viewer",
+        "description": "Read-only viewer for presentations and evaluation scorecards"
+      }
+    ]
+  },
+  "defaultRoles": [
+    "viewer"
+  ],
+  "clients": [
+    {
+      "clientId": "atlas-hub-app",
+      "name": "Atlas Hub Frontend & API Client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:3000/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:8000/api/auth/callback"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:3000",
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ]
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "enterprise-saml-idp",
+      "displayName": "Enterprise SAML Identity Provider",
+      "providerId": "saml",
+      "enabled": false,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "entityId": "http://127.0.0.1:8080/realms/atlas-hub",
+        "singleSignOnServiceUrl": "https://idp.example.com/saml/sso",
+        "singleLogoutServiceUrl": "https://idp.example.com/saml/slo",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+        "principalType": "SUBJECT",
+        "signatureAlgorithm": "RSA_SHA256",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "wantAssertionsSigned": "true",
+        "wantAuthnRequestsSigned": "true"
+      }
+    }
+  ]
+}
