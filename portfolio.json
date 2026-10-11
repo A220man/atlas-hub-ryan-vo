@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "atlas-hub-ryan-vo",
+  "owner": "A220man",
+  "email": "ryandtvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Synthesizes structured native PowerPoint presentations from technical documents with span-level attribution integrity and multi-modal alignment evaluation.",
+  "workflows": [
+    "Hierarchical document ingestion and structured slide graph synthesis with native pptx export",
+    "Attribution guard and span-level factual grounding evaluation with actionable diagnostics",
+    "Multi-template canvas adaptation and speaker note narration planning with terminology audits"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "version": "1.0.0"
+}

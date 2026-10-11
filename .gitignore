@@ -1,0 +1,28 @@
+# Dependencies and environments
+.venv/
+node_modules/
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+coverage/
+
+# Environment files and credentials
+.env
+*.db
+*.sqlite
+*.sqlite3
+
+# Local agent metadata (required by contract)
+.antigravitycli/
+.omp/
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

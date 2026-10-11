@@ -1,0 +1,72 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin_password_dev_only
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep '200 OK' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: development
+      DEMO_MODE: "true"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      DATABASE_URL: "sqlite:////app/data/atlas_hub.db"
+      OIDC_ISSUER: "http://127.0.0.1:8080/realms/atlas-hub"
+      OIDC_CLIENT_ID: "atlas-hub-app"
+      OIDC_AUDIENCE: "atlas-hub-app"
+      OIDC_DISCOVERY_URL: "http://keycloak:8080/realms/atlas-hub/.well-known/openid-configuration"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - backend_data:/app/data
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  keycloak_data:
+  backend_data:
