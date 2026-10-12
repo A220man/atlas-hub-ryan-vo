@@ -7,9 +7,8 @@ from pydantic import BaseModel, Field
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role, UserPrincipal
 from app.core.audit import log_audit_event
-from app.models.presentation import Presentation, NarrationPlan
+from app.models.presentation import Presentation, NarrationPlan, get_presentation_or_404
 from app.models.schemas import NarrationPlanResponse, NarrationCue, SlideContent
-from app.services.slide_synthesizer import SlideGraphNode
 from app.services.narration_service import NarrationService
 
 router = APIRouter(prefix="/presentations", tags=["Narration & Audio Planning"])
@@ -22,9 +21,7 @@ class GenerateNarrationRequest(BaseModel):
 
 
 def _get_pres_and_plan(presentation_id: str, db: Session):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
+    pres = get_presentation_or_404(db, presentation_id)
     plan = db.query(NarrationPlan).filter(NarrationPlan.presentation_id == presentation_id).order_by(desc(NarrationPlan.created_at)).first()
     if not plan:
         raise HTTPException(status_code=404, detail=f"No narration plan exists for presentation '{presentation_id}'.")
@@ -38,20 +35,8 @@ def generate_narration_plan(
     db: Session = Depends(get_db),
     current_user: UserPrincipal = Depends(require_role("analyst")),
 ):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
-
-    slide_nodes = [
-        SlideGraphNode(
-            index=s.slide_index,
-            title=s.title,
-            layout_type=s.layout_type,
-            content=SlideContent.model_validate_json(s.content_json),
-            speaker_notes=s.notes or "",
-        )
-        for s in pres.slides
-    ]
+    pres = get_presentation_or_404(db, presentation_id)
+    slide_nodes = pres.to_slide_nodes()
 
     plan_resp = narration_service.generate_plan(slides=slide_nodes, presentation_id=pres.id, voice_id=req.voice_id, target_wpm=req.target_wpm)
     plan = NarrationPlan(

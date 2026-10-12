@@ -27,6 +27,28 @@ class Presentation(Base):
     evaluations = relationship("EvaluationReport", back_populates="presentation", cascade="all, delete-orphan")
     narration_plans = relationship("NarrationPlan", back_populates="presentation", cascade="all, delete-orphan")
 
+    def to_slide_nodes(self):
+        from app.services.slide_synthesizer import SlideGraphNode
+        from app.models.schemas import SlideContent
+        return [
+            SlideGraphNode(
+                index=s.slide_index,
+                title=s.title,
+                layout_type=s.layout_type,
+                content=SlideContent.model_validate_json(s.content_json),
+                speaker_notes=s.notes or "",
+            )
+            for s in self.slides
+        ]
+
+
+def get_presentation_or_404(db, presentation_id: str) -> Presentation:
+    from fastapi import HTTPException, status
+    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
+    if not pres:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Presentation '{presentation_id}' not found.")
+    return pres
+
 
 class Slide(Base):
     __tablename__ = "slides"
