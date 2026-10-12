@@ -7,7 +7,7 @@ from sqlalchemy import desc
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role, UserPrincipal
 from app.core.audit import log_audit_event
-from app.models.presentation import Presentation, Slide, CustomTemplate
+from app.models.presentation import Presentation, Slide, CustomTemplate, get_presentation_or_404
 from app.models.schemas import PresentationCreateRequest, PresentationUpdateRequest, PresentationSummaryResponse, PresentationDetailResponse, SlideSchema, SlideContent, PaginatedResponse
 from app.services.document_parser import DocumentParser
 from app.services.slide_synthesizer import SlideSynthesizer, SlideGraphNode
@@ -52,16 +52,12 @@ def list_presentations(page: int=Query(default=1, ge=1), size: int=Query(default
 
 @router.get('/{presentation_id}', response_model=PresentationDetailResponse)
 def get_presentation(presentation_id: str, db: Session=Depends(get_db), current_user: UserPrincipal=Depends(get_current_user)):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
+    pres = get_presentation_or_404(db, presentation_id)
     return _format_detail(pres)
 
 @router.put('/{presentation_id}', response_model=PresentationSummaryResponse)
 def update_presentation(presentation_id: str, req: PresentationUpdateRequest, db: Session=Depends(get_db), current_user: UserPrincipal=Depends(require_role('analyst'))):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
+    pres = get_presentation_or_404(db, presentation_id)
     if req.title:
         pres.title = req.title
     if req.template_id:
@@ -75,9 +71,7 @@ def update_presentation(presentation_id: str, req: PresentationUpdateRequest, db
 
 @router.delete('/{presentation_id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_presentation(presentation_id: str, db: Session=Depends(get_db), current_user: UserPrincipal=Depends(require_role('analyst'))):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
+    pres = get_presentation_or_404(db, presentation_id)
     log_audit_event(db=db, user_id=current_user.email, action='DELETE_PRESENTATION', resource_type='presentation', resource_id=pres.id, details={'title': pres.title})
     db.delete(pres)
     db.commit()
@@ -85,12 +79,10 @@ def delete_presentation(presentation_id: str, db: Session=Depends(get_db), curre
 
 @router.get('/{presentation_id}/export/pptx')
 def export_pptx(presentation_id: str, db: Session=Depends(get_db), current_user: UserPrincipal=Depends(get_current_user)):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=404, detail=f"Presentation '{presentation_id}' not found.")
-    slide_nodes = [SlideGraphNode(index=s.slide_index, title=s.title, layout_type=s.layout_type, content=SlideContent.model_validate_json(s.content_json), speaker_notes=s.notes or '') for s in pres.slides]
+    pres = get_presentation_or_404(db, presentation_id)
+    slide_nodes = pres.to_slide_nodes()
     custom_tmpl = db.query(CustomTemplate).filter(CustomTemplate.id == pres.template_id).first()
     custom_bytes = base64.b64decode(custom_tmpl.content_b64) if custom_tmpl else None
     pptx_bytes = pptx_compiler.compile(slide_nodes, template_id=pres.template_id, aspect_ratio=pres.aspect_ratio, custom_template_bytes=custom_bytes)
-    filename = f'{pres.title.lower().replace(' ', '_')[:32]}.pptx'
+    filename = f"{pres.title.lower().replace(' ', '_')[:32]}.pptx"
     return Response(content=pptx_bytes, media_type='application/vnd.openxmlformats-officedocument.presentationml.presentation', headers={'Content-Disposition': f'attachment; filename="{filename}"'})
