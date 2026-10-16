@@ -89,7 +89,7 @@ The 4-pillar quality scorecard (Grounding, Balance, Pacing, Consistency) provide
 - **Native OpenXML PowerPoint Compiler**: Generates editable `.pptx` files with real shapes, text frames, native tables, native charts, transition triggers, and embedded presenter notes.
 - **Attribution Guard**: A fail-closed integrity gate that maps each presentation assertion back to source text spans. Emits structured diagnostics (`ATTR_UNGROUNDED_CLAIM`, `ATTR_METRIC_MISMATCH`, `ATTR_LANG_MIXED`) and explicit exit codes rather than silent failures.
 - **4-Pillar Quality Scorecard**: Computes overall quality from Grounding (40%), Balance (25%), Pacing (20%), and Terminology Consistency (15%).
-- **Audio Narration Studio**: Calculates syllable counts, words per minute (WPM), speech duration, pause markers, and exports time-synchronized WebVTT captions (`.vtt`).
+- **Audio Narration Studio**: Calculates syllable counts, words per minute (WPM), speech duration, pause markers, and exports time-synchronized WebVTT captions (`.vtt`) plus synthesized PCM WAV audio (`.wav`) for the full deck or per-slide.
 - **Provider-Agnostic LLM Advisory**: Opt-in advisory analysis supporting OpenAI-compatible, Anthropic, Gemini, and Ollama with an offline rule-based heuristic core.
 - **Enterprise OIDC & Keycloak Broker Authentication**: Secure authorization-code login with PKCE, in-memory SPA token storage, role-based access control (`viewer`, `analyst`, `admin`), and SAML broker configuration.
 
@@ -127,6 +127,8 @@ Decks are mapped to responsive design templates (`modern-navy`, `emerald-clean`,
 | `POST` | `/api/presentations/{id}/narration` | Generate audio pacing schedule and narration cues | `analyst`, `admin` |
 | `GET` | `/api/presentations/{id}/narration` | Retrieve narration plan | All |
 | `GET` | `/api/presentations/{id}/narration/vtt` | Export time-synchronized WebVTT captions | All |
+| `GET` | `/api/presentations/{id}/narration/audio` | Export synthesized PCM WAV audio for full deck | All |
+| `GET` | `/api/presentations/{id}/narration/slides/{slide_index}/audio` | Export synthesized PCM WAV audio for a single slide | All |
 | `GET` | `/api/templates` | List supported design themes and aspect ratios | All |
 | `POST` | `/api/presentations/{id}/advisory` | Request grounded presentation advisory review | `analyst`, `admin` |
 | `GET` | `/api/health` | Service health status | Public |

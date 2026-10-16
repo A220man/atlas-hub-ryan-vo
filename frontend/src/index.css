@@ -17,6 +17,7 @@ body{background:var(--bg);color:var(--txt);min-height:100vh}
 .btn-outline{background:transparent;border-color:var(--bdr);color:var(--txt)}
 .btn-danger-outline{background:transparent;border-color:#fca5a5;color:var(--d)}
 .btn-sm{padding:.2rem .5rem;font-size:.75rem}
+ .btn-xs{padding:.1rem .3rem;font-size:.65rem}
 .btn-link{background:none;border:none;color:var(--a);cursor:pointer;font-size:.8rem;text-decoration:underline}
 .select-input,.text-input,.search-input,.textarea-input{border:1px solid var(--bdr);border-radius:6px;padding:.4rem .6rem;font-size:.85rem;background:#fff}
 .filter-bar{display:flex;gap:1rem;margin:1rem 0}

@@ -55,6 +55,18 @@ async function apiFetch<T>(
   return response.json();
 }
 
+async function _fetchBinary(url: string): Promise<Response> {
+  const headers = new Headers();
+  if (inMemoryToken) {
+    headers.set("Authorization", `Bearer ${inMemoryToken}`);
+  }
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response;
+}
+
 export const apiClient = {
   async demoLogin(role = "analyst"): Promise<{ access_token: string; user: UserPrincipal }> {
     const data = await apiFetch<{ access_token: string; user: UserPrincipal }>("/api/auth/demo-login", {
@@ -127,14 +139,7 @@ export const apiClient = {
   },
 
   async exportPptx(id: string): Promise<Blob> {
-    const headers = new Headers();
-    if (inMemoryToken) {
-      headers.set("Authorization", `Bearer ${inMemoryToken}`);
-    }
-    const response = await fetch(`/api/presentations/${id}/export/pptx`, { headers });
-    if (!response.ok) {
-      throw new Error(`Failed to export PPTX: ${response.statusText}`);
-    }
+    const response = await _fetchBinary(`/api/presentations/${id}/export/pptx`);
     return response.blob();
   },
 
@@ -163,15 +168,18 @@ export const apiClient = {
   },
 
   async exportNarrationVtt(id: string): Promise<string> {
-    const headers = new Headers();
-    if (inMemoryToken) {
-      headers.set("Authorization", `Bearer ${inMemoryToken}`);
-    }
-    const response = await fetch(`/api/presentations/${id}/narration/vtt`, { headers });
-    if (!response.ok) {
-      throw new Error(`Failed to export VTT: ${response.statusText}`);
-    }
+    const response = await _fetchBinary(`/api/presentations/${id}/narration/vtt`);
     return response.text();
+  },
+
+  async downloadNarrationAudio(id: string): Promise<Blob> {
+    const response = await _fetchBinary(`/api/presentations/${id}/narration/audio`);
+    return response.blob();
+  },
+
+  async downloadSlideAudio(id: string, slideIndex: number): Promise<Blob> {
+    const response = await _fetchBinary(`/api/presentations/${id}/narration/slides/${slideIndex}/audio`);
+    return response.blob();
   },
 
   async requestAdvisory(
