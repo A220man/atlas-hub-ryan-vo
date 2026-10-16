@@ -1,8 +1,16 @@
 # Changelog
 
+## 1.2.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.1.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Added
+- Expose narration audio WAV download in the NarrationStudio UI (full deck + per-slide),
+  with API client methods and backend integration test coverage.
 
 All notable changes to atlas-hub-ryan-vo are documented in this file.
 

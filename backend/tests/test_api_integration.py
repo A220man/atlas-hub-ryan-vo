@@ -79,6 +79,12 @@ def test_full_presentation_lifecycle_across_http_boundary(client):
     assert vtt_resp.status_code == 200
     assert "WEBVTT" in vtt_resp.text
 
+    # Export synthesized WAV audio narration
+    audio_resp = client.get(f"/api/presentations/{pres_id}/narration/audio", headers=headers)
+    assert audio_resp.status_code == 200
+    assert len(audio_resp.content) > 100
+    assert audio_resp.content.startswith(b"RIFF")
+
     # 8. Update presentation metadata
     update_resp = client.put(
         f"/api/presentations/{pres_id}",
