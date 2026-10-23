@@ -85,6 +85,15 @@ def test_full_presentation_lifecycle_across_http_boundary(client):
     assert len(audio_resp.content) > 100
     assert audio_resp.content.startswith(b"RIFF")
 
+    # Export per-slide WAV audio narration
+    for slide_idx in range(len(narration_data["cues"])):
+        slide_audio_resp = client.get(
+            f"/api/presentations/{pres_id}/narration/slides/{slide_idx}/audio", headers=headers
+        )
+        assert slide_audio_resp.status_code == 200
+        assert len(slide_audio_resp.content) > 100
+        assert slide_audio_resp.content.startswith(b"RIFF")
+
     # 8. Update presentation metadata
     update_resp = client.put(
         f"/api/presentations/{pres_id}",

@@ -1,16 +1,19 @@
 # Changelog
 
-## 1.2.0 — work-in-progress checkpoint
+## 1.3.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
 
-## 1.1.0 — work-in-progress checkpoint
+## 1.2.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
 
 ### Added
 - Expose narration audio WAV download in the NarrationStudio UI (full deck + per-slide),
-  with API client methods and backend integration test coverage.
+  with API client methods, backend integration tests, and frontend test coverage.
+- Backend integration test coverage for per-slide audio endpoints.
+- Frontend test coverage for per-slide audio download button in cues table.
+- Narration service unit test for per-slide audio synthesis.
 
 All notable changes to atlas-hub-ryan-vo are documented in this file.
 
