@@ -37,3 +37,13 @@ def test_narration_service_computes_speech_timeline():
     assert vtt.startswith("WEBVTT")
     assert "-->" in vtt
     assert "[Introduction to Atlas Hub]" in vtt
+
+    # Test full deck audio synthesis
+    audio = service.synthesize_audio(plan.cues)
+    assert len(audio) > 100
+    assert audio.startswith(b"RIFF")
+
+    # Test per-slide audio synthesis
+    slide_audio = service.synthesize_slide_audio(plan.cues[0])
+    assert len(slide_audio) > 100
+    assert slide_audio.startswith(b"RIFF")

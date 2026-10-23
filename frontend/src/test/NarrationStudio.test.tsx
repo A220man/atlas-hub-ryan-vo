@@ -84,4 +84,35 @@ describe("NarrationStudio Component", () => {
 
     vi.restoreAllMocks();
   });
+
+  it("triggers per-slide audio download via API client", async () => {
+    const mockBlob = new Blob([new Uint8Array([0x52, 0x49, 0x46, 0x46])], {
+      type: "audio/wav",
+    });
+    vi.mocked(apiClient.downloadSlideAudio).mockResolvedValue(mockBlob);
+
+    // Mock URL.createObjectURL / revokeObjectURL (not implemented in jsdom)
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+    // Suppress jsdom window.alert
+    vi.stubGlobal("alert", vi.fn());
+
+    render(
+      <NarrationStudio
+        presentationId="pres-1"
+        narrationPlan={mockPlan}
+        onPlanGenerated={vi.fn()}
+      />
+    );
+
+    // Find the per-slide audio button (first slide in the table)
+    const slideAudioBtn = screen.getByText("⬇️ WAV");
+    fireEvent.click(slideAudioBtn);
+
+    await waitFor(() => {
+      expect(apiClient.downloadSlideAudio).toHaveBeenCalledWith("pres-1", 0);
+    });
+
+    vi.restoreAllMocks();
+  });
 });
