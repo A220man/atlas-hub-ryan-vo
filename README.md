@@ -3,7 +3,7 @@
 > Work in progress. This checkpoint may be incomplete or fail tests. See PLAN.md and STATUS.md before use.
 
 
-Current version: `1.0.0`.
+Current version: `1.3.0`.
 
 Atlas Hub solves the problem of hallucinated, fragile, and uneditable presentation decks in AI generation pipelines. While generative models can draft slide copy, production presentation authoring workflows require verifiable factual attribution, predictable layout geometry, native client-side PowerPoint editability (.pptx), and actionable integrity diagnostics. Atlas Hub implements a deterministic document ingestion engine, a multi-archetype slide graph synthesizer, an OpenXML presentation compiler, and a fail-closed Attribution Guard with span-level grounding verification designed for ML engineers, enterprise analysts, and developer tool platforms.
 
