@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-narration-audio-download
+advisory-api-endpoint
 
 ## Roadmap
 
@@ -24,4 +24,19 @@ Acceptance:
 Implementation: `frontend/src/api/client.ts`, `frontend/src/components/NarrationStudio.tsx`, `frontend/src/index.css`
 
 Tests: `backend/tests/test_api_integration.py`, `frontend/src/test/NarrationStudio.test.tsx`
+
+### advisory-api-endpoint — Implement AI Advisory API endpoint for presentation strategic review
+
+Status: done
+
+Acceptance:
+- Backend API has POST /api/presentations/{id}/advisory endpoint
+- Endpoint uses LLMAdvisoryService with offline heuristic fallback
+- Endpoint requires analyst role
+- Frontend AI Advisory tab calls the new API endpoint
+- All existing tests continue to pass
+
+Implementation: `backend/app/api/advisory.py`, `backend/app/api/templates.py`, `backend/app/main.py`
+
+Tests: `backend/tests/test_llm_advisory.py`, `backend/tests/test_api_integration.py`
 

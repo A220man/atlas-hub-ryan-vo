@@ -6,12 +6,9 @@ from app.core.database import get_db
 from app.core.security import get_current_user, require_role, UserPrincipal
 from app.core.audit import log_audit_event
 from app.models.presentation import Presentation, CustomTemplate
-from app.models.schemas import TemplateTheme, CustomTemplateResponse, AdvisoryRequest, AdvisoryResponse, SlideContent
-from app.services.slide_synthesizer import SlideGraphNode
-from app.services.llm_advisory import LLMAdvisoryService
+from app.models.schemas import TemplateTheme, CustomTemplateResponse
 from app.services.pptx_compiler import PPTXCompiler
 router = APIRouter(tags=['Templates & Advisory'])
-llm_service = LLMAdvisoryService()
 pptx_compiler = PPTXCompiler()
 BUILTIN_TEMPLATES: List[TemplateTheme] = [TemplateTheme(id='modern-navy', name='Modern Navy', description='Corporate deep blue with cyan accents.', primary_color='#0E1E40', secondary_color='#0072CE', background_color='#F8F9FA', font_heading='Calibri', font_body='Calibri', aspect_ratios=['16:9', '4:3'], is_custom=False), TemplateTheme(id='emerald-clean', name='Emerald Clean', description='Contemporary emerald with amber callouts.', primary_color='#0A3D2E', secondary_color='#10956B', background_color='#F6FAF8', font_heading='Segoe UI', font_body='Segoe UI', aspect_ratios=['16:9', '4:3'], is_custom=False), TemplateTheme(id='slate-minimal', name='Slate Minimal', description='Monochrome graphite for technical briefs.', primary_color='#1E293B', secondary_color='#475569', background_color='#FFFFFF', font_heading='Arial', font_body='Arial', aspect_ratios=['16:9', '4:3'], is_custom=False)]
 
@@ -51,10 +48,3 @@ def delete_custom_template(template_id: str, db: Session=Depends(get_db), curren
     db.commit()
     return None
 
-@router.post('/presentations/{presentation_id}/advisory', response_model=AdvisoryResponse)
-async def request_advisory(presentation_id: str, req: AdvisoryRequest, db: Session=Depends(get_db), current_user: UserPrincipal=Depends(require_role('analyst'))):
-    pres = db.query(Presentation).filter(Presentation.id == presentation_id).first()
-    if not pres:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Presentation '{presentation_id}' not found.")
-    slide_nodes = [SlideGraphNode(index=s.slide_index, title=s.title, layout_type=s.layout_type, content=SlideContent.model_validate_json(s.content_json), speaker_notes=s.notes or '') for s in pres.slides]
-    return await llm_service.get_advisory(slides=slide_nodes, query_type=req.query_type, custom_instructions=req.custom_instructions)
