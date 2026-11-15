@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import List, Optional
 import httpx
 from app.core.config import settings
@@ -14,10 +15,12 @@ class LLMAdvisoryService:
         self.model = settings.LLM_MODEL
         self.api_key = settings.LLM_API_KEY
         self.base_url = settings.LLM_BASE_URL
+        self.logger = logging.getLogger(__name__)
 
     async def get_advisory(self, slides: List[SlideGraphNode], query_type: str = "executive_review", custom_instructions: Optional[str] = None) -> AdvisoryResponse:
         grounded_refs = [s.title for s in slides]
         if not self.api_key:
+            self.logger.info("No API key configured, using offline heuristic")
             return self._offline_heuristic_advisory(slides, query_type, grounded_refs)
 
         prompt = f"Review deck with {len(slides)} slides. Query: {query_type}\n" + "\n".join(f"Slide {s.index + 1}: '{s.title}' (Layout: {s.layout_type})" for s in slides)
@@ -25,12 +28,22 @@ class LLMAdvisoryService:
             prompt += f"\nInstructions: {custom_instructions}"
 
         try:
+            self.logger.info(f"Calling provider: {self.provider}, model: {self.model}")
             advice_text = await self._call_provider(prompt)
+            self.logger.info("Provider call successful")
             return AdvisoryResponse(provider=self.provider, model=self.model, advice=advice_text, grounded_references=grounded_refs, is_advisory=True)
+        except httpx.TimeoutException as exc:
+            self.logger.warning(f"Provider timeout after {self.TIMEOUT_SECONDS}s: {exc}")
+            return self._create_error_fallback(exc, "timeout", slides, query_type, grounded_refs)
+        except httpx.HTTPStatusError as exc:
+            self.logger.error(f"Provider HTTP error {exc.response.status_code}: {exc}")
+            return self._create_error_fallback(exc, "http_error", slides, query_type, grounded_refs)
+        except httpx.HTTPError as exc:
+            self.logger.error(f"Provider HTTP error: {exc}")
+            return self._create_error_fallback(exc, "http_error", slides, query_type, grounded_refs)
         except Exception as exc:
-            fallback = self._offline_heuristic_advisory(slides, query_type, grounded_refs)
-            fallback.advice = f"[Notice: Provider error ({self._redact_secrets(str(exc))}). Offline heuristic provided.]\n\n" + fallback.advice
-            return fallback
+            self.logger.error(f"Unexpected provider error: {type(exc).__name__}: {exc}")
+            return self._create_error_fallback(exc, "unexpected_error", slides, query_type, grounded_refs)
 
     async def _call_provider(self, prompt: str) -> str:
         async with httpx.AsyncClient(timeout=self.TIMEOUT_SECONDS) as client:
@@ -55,6 +68,13 @@ class LLMAdvisoryService:
         has_chart = any(s.layout_type == "metrics_chart" for s in slides)
         advice = f"Advisory Analysis for {total}-slide deck ({query_type}):\n1. Structural balance across {total} slides.\n2. Quantitative visuals: {'Chart verified.' if has_chart else 'Consider adding metric charts.'}\n3. Slide transitions grounded in source text."
         return AdvisoryResponse(provider="offline-heuristic", model="deterministic-rule-v1", advice=advice, grounded_references=grounded_refs, is_advisory=True)
+
+    def _create_error_fallback(self, exc: Exception, error_type: str, slides: List[SlideGraphNode], query_type: str, grounded_refs: List[str]) -> AdvisoryResponse:
+        fallback = self._offline_heuristic_advisory(slides, query_type, grounded_refs)
+        error_context = f"[Notice: {error_type.title().replace('_', ' ')} ({self._redact_secrets(str(exc))}). Provider unavailable; offline heuristic provided.]"
+        fallback.advice = error_context + "\n\n" + fallback.advice
+        fallback.provider = f"{fallback.provider}-{error_type}"
+        return fallback
 
     def _redact_secrets(self, text: str) -> str:
         if not text:
