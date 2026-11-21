@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atlas-hub-ryan-vo"
-version = "1.8.0"
+version = "1.9.0"
 description = "AI presentation synthesis, native PPTX compilation, attribution integrity guard, and multi-modal alignment evaluation platform"
 readme = "README.md"
 requires-python = ">=3.12"
