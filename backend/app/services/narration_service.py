@@ -80,25 +80,41 @@ class NarrationService:
             samples = []
             for cue in cues:
                 words = cue.speech_text.split()
-                usable_time = max(0.5, cue.duration_seconds - cue.pause_after_seconds)
-                word_dur = max(0.18, usable_time / max(1, len(words)))
-                for i, word in enumerate(words):
-                    n_samples = int(rate * word_dur)
-                    f0 = pitch * (1.0 + 0.08 * math.sin(i * 0.9))
-                    f1 = 450.0 + (hash(word) % 250)
-                    for s in range(n_samples):
-                        t = s / rate
-                        frac = s / n_samples
-                        env = math.sin(frac * math.pi) ** 0.5
-                        wave_val = math.sin(2 * math.pi * f0 * t) + 0.4 * math.sin(4 * math.pi * f0 * t) + 0.3 * math.sin(2 * math.pi * f1 * t)
-                        if frac < 0.08:
-                            wave_val += 0.25 * (1.0 - frac / 0.08)
-                        val = int(max(-32767, min(32767, 32767 * 0.45 * env * wave_val)))
-                        samples.append(struct.pack("<h", val))
-                pause_samples = int(rate * cue.pause_after_seconds)
-                samples.extend([struct.pack("<h", 0)] * pause_samples)
+                # The cue's full duration_seconds window owns both speech and the
+                # trailing pause, so rendered audio lines up with the VTT timeline.
+                speech_time = max(0.5, cue.duration_seconds - cue.pause_after_seconds)
+                speech_samples = int(round(rate * speech_time))
+                if words and speech_samples > 0:
+                    # Split the speech window proportionally across words so the
+                    # last word ends exactly at the cue boundary rather than
+                    # drifting short from per-word integer truncation.
+                    n_words = len(words)
+                    for i, word in enumerate(words):
+                        start_sample = int(round(speech_samples * i / n_words))
+                        end_sample = int(round(speech_samples * (i + 1) / n_words))
+                        if end_sample <= start_sample:
+                            continue
+                        f0 = pitch * (1.0 + 0.08 * math.sin(i * 0.9))
+                        f1 = 450.0 + (hash(word) % 250)
+                        for s in range(start_sample, end_sample):
+                            t = s / rate
+                            frac = s / speech_samples
+                            env = math.sin(frac * math.pi) ** 0.5
+                            wave_val = math.sin(2 * math.pi * f0 * t) + 0.4 * math.sin(4 * math.pi * f0 * t) + 0.3 * math.sin(2 * math.pi * f1 * t)
+                            if frac < 0.08:
+                                wave_val += 0.25 * (1.0 - frac / 0.08)
+                            val = int(max(-32767, min(32767, 32767 * 0.45 * env * wave_val)))
+                            samples.append(struct.pack("<h", val))
+                # Pad the remaining speech window plus the trailing pause.
+                total_samples = int(round(rate * cue.duration_seconds))
+                if len(samples) < total_samples:
+                    samples.extend([struct.pack("<h", 0)] * (total_samples - len(samples)))
             wf.writeframes(b"".join(samples))
         return buf.getvalue()
+
+    def get_total_duration_seconds(self, cues: List[NarrationCue]) -> float:
+        """Wall-clock length of rendered audio for the supplied cues."""
+        return round(sum(c.duration_seconds for c in cues), 3)
 
     def export_webvtt(self, cues: List[NarrationCue]) -> str:
         lines = ["WEBVTT", ""]
