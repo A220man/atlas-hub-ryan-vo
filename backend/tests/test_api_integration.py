@@ -13,7 +13,7 @@ def test_full_presentation_lifecycle_across_http_boundary(client):
         "- Slide generation without span grounding causes hallucination.\n"
         "- Manual formatting in presentation tools is repetitive.\n\n"
         "## Empirical Performance\n"
-        "- Grounding verification accuracy is 96.8%.\n"
+        "- Grounding verification accuracy is 96.8%\n"
         "- Synthesis latency is 240 ms per deck.\n\n"
         "## Engineering Roadmap\n"
         "- Deploy OIDC Keycloak authentication across cluster.\n"
@@ -140,3 +140,39 @@ def test_boundary_and_malformed_inputs(client, analyst_token):
     tpl_resp = client.get("/api/templates", headers=headers)
     assert tpl_resp.status_code == 200
     assert len(tpl_resp.json()) >= 3
+
+
+def test_advisory_endpoint_with_analyst_role(client, analyst_token):
+    """Verify advisory endpoint returns valid response with analyst role.
+    Acceptance: Backend API has POST /api/presentations/{id}/advisory endpoint;
+    Endpoint requires analyst role; Frontend AI Advisory tab calls the new API endpoint."""
+    headers = {"Authorization": f"Bearer {analyst_token}"}
+
+    # Create a presentation first
+    create_resp = client.post(
+        "/api/presentations",
+        json={
+            "title": "Advisory Test Presentation",
+            "raw_content": "# System Overview\n\n## Introduction\nThis is a test presentation for advisory endpoint verification.",
+            "aspect_ratio": "16:9",
+            "template_id": "modern-navy",
+        },
+        headers=headers,
+    )
+    assert create_resp.status_code == 201, f"Presentation creation failed: {create_resp.text}"
+    created = create_resp.json()
+    pres_id = created["id"]
+    assert len(created["slides"]) >= 2
+
+    # Call advisory endpoint
+    advisory_resp = client.post(
+        f"/api/presentations/{pres_id}/advisory",
+        json={"query_type": "executive_review"},
+        headers=headers,
+    )
+    assert advisory_resp.status_code == 200, f"Advisory endpoint failed: {advisory_resp.text}"
+    advisory_data = advisory_resp.json()
+    assert advisory_data["is_advisory"] is True
+    assert advisory_data["provider"] in ("offline-heuristic", "openai-compatible")
+    assert len(advisory_data["grounded_references"]) >= 2
+    assert len(advisory_data["advice"]) > 20
