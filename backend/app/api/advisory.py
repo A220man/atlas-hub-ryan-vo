@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role, UserPrincipal
 from app.models.presentation import Presentation, Slide, get_presentation_or_404
-from app.models.schemas import AdvisoryRequest, AdvisoryResponse
+from app.models.schemas import AdvisoryRequest, AdvisoryResponse, SlideContent
 from app.services.slide_synthesizer import SlideGraphNode
 from app.services.llm_advisory import LLMAdvisoryService
 
@@ -19,7 +19,7 @@ def _get_slide_nodes(presentation: Presentation) -> list[SlideGraphNode]:
             index=s.slide_index,
             title=s.title,
             layout_type=s.layout_type,
-            content=None,  # Advisory doesn't need full content
+            content=SlideContent(header=s.title),  # Minimal content for advisory
             speaker_notes=s.notes,
         )
         for s in sorted(presentation.slides, key=lambda s: s.slide_index)
@@ -49,4 +49,3 @@ async def request_advisory(
         custom_instructions=request.custom_instructions,
     )
     return result
-
